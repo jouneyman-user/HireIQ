@@ -5,8 +5,8 @@ import { setupServer } from 'msw/node'
 import App from '../App'
 
 const server = setupServer(
-  http.get('/api/health', () => {
-    return HttpResponse.json({ status: 'ok', timestamp: '2026-05-14T12:00:00.000000+00:00' })
+  http.get('/api/resumes/', () => {
+    return HttpResponse.json([])
   })
 )
 
@@ -17,30 +17,44 @@ afterAll(() => server.close())
 describe('App', () => {
   it('renders the HireIQ heading', () => {
     render(<App />)
-    expect(screen.getByText('HireIQ')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: /hireiq/i })).toBeInTheDocument()
   })
 
-  it('shows loading state initially', () => {
+  it('renders the upload form', () => {
     render(<App />)
-    expect(screen.getByText(/loading/i)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: /upload resume/i })).toBeInTheDocument()
   })
 
-  it('displays API status ok after successful fetch', async () => {
+  it('renders the uploaded resumes heading', () => {
+    render(<App />)
+    expect(screen.getByRole('heading', { level: 2, name: /uploaded resumes/i })).toBeInTheDocument()
+  })
+
+  it('shows empty state when no resumes are returned', async () => {
     render(<App />)
     await waitFor(() => {
-      expect(screen.getByText('ok')).toBeInTheDocument()
+      expect(screen.getByText(/no resumes uploaded yet/i)).toBeInTheDocument()
     })
   })
 
-  it('displays unreachable on fetch failure', async () => {
+  it('displays uploaded resumes fetched on mount', async () => {
     server.use(
-      http.get('/api/health', () => {
-        return HttpResponse.error()
+      http.get('/api/resumes/', () => {
+        return HttpResponse.json([
+          {
+            id: 1,
+            candidate_name: 'Alice',
+            candidate_email: 'alice@test.com',
+            original_filename: 'alice_cv.pdf',
+            file_size_bytes: 1024,
+            uploaded_at: '2026-05-14T12:00:00',
+          },
+        ])
       })
     )
     render(<App />)
     await waitFor(() => {
-      expect(screen.getByText('unreachable')).toBeInTheDocument()
+      expect(screen.getByText('Alice')).toBeInTheDocument()
     })
   })
 })

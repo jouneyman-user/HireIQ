@@ -62,7 +62,7 @@ cp backend/.env.example backend/.env
 make migrate
 ```
 
-Creates `backend/hireiq.db`. Safe to run multiple times — existing tables are never dropped.
+Creates `backend/hireiq.db` and `backend/uploads/resumes/`. Safe to run multiple times — existing tables and directories are never dropped or recreated destructively.
 
 ### 4. Start development servers
 
@@ -160,6 +160,70 @@ curl http://localhost:8000/health
 
 ---
 
+### `POST /resumes/`
+
+Upload a candidate resume (PDF or DOCX, ≤ 10 MB). Stores the file and persists metadata to SQLite.
+
+**Request** — `multipart/form-data`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `candidate_name` | `string` | ✅ | Full name of the candidate |
+| `candidate_email` | `string` | ✅ | Email address of the candidate |
+| `file` | `file` | ✅ | PDF (`application/pdf`) or DOCX file |
+
+**Response** — HTTP 201
+
+```json
+{
+  "id": 1,
+  "candidate_name": "Alice Smith",
+  "candidate_email": "alice@example.com",
+  "original_filename": "alice_cv.pdf",
+  "stored_filename": "3f2e1a9b-8c74-4d01-a5e6-12abc3d45e67.pdf",
+  "content_type": "application/pdf",
+  "file_size_bytes": 102400,
+  "uploaded_at": "2026-05-14T12:00:00"
+}
+```
+
+**Error responses:** `415` unsupported file type · `413` file exceeds 10 MB
+
+**Example:**
+
+```bash
+curl -F "candidate_name=Alice Smith" \
+     -F "candidate_email=alice@example.com" \
+     -F "file=@/path/to/resume.pdf" \
+     http://localhost:8000/resumes/
+```
+
+---
+
+### `GET /resumes/`
+
+List all uploaded resumes, ordered newest-first.
+
+**Response** — HTTP 200 — array of Resume objects (same shape as `POST /resumes/` response)
+
+```bash
+curl http://localhost:8000/resumes/
+```
+
+---
+
+### `GET /resumes/{id}`
+
+Retrieve metadata for a single resume by ID.
+
+**Response** — HTTP 200 Resume object · `404` if not found
+
+```bash
+curl http://localhost:8000/resumes/1
+```
+
+---
+
 ## Project Structure
 
 ```
@@ -168,16 +232,27 @@ HireIQ/
 │   ├── app/
 │   │   ├── main.py             # App factory: FastAPI instance + CORS + routers
 │   │   ├── database.py         # SQLAlchemy engine, SessionLocal, Base
+│   │   ├── models/
+│   │   │   └── resume.py       # Resume SQLAlchemy model
 │   │   └── routers/
-│   │       └── health.py       # GET /health
+│   │       ├── health.py       # GET /health
+│   │       └── resumes.py      # POST/GET /resumes/ + GET /resumes/{id}
 │   ├── migrations/
-│   │   └── init_db.py          # Idempotent DB initialisation
+│   │   └── init_db.py          # Idempotent DB initialisation + creates uploads/
+│   ├── uploads/                # Gitignored — created automatically by `make migrate`
+│   │   └── resumes/            # UUID-named PDF/DOCX files
+│   ├── tests/
+│   │   ├── test_health.py
+│   │   └── test_resumes.py
 │   ├── requirements.txt
 │   └── .env.example
 ├── frontend/                   # React + TypeScript + Vite
 │   ├── src/
 │   │   ├── main.tsx            # React entry point
-│   │   └── App.tsx             # Root component
+│   │   ├── App.tsx             # Root component — resume upload + list
+│   │   └── components/
+│   │       ├── ResumeUpload.tsx # Drag-and-drop upload form
+│   │       └── ResumeList.tsx  # Tabular resume list
 │   ├── vite.config.ts          # Proxy: /api/* → localhost:8000
 │   └── package.json
 ├── docs/superpowers/specs/     # Technical specs per milestone
@@ -203,6 +278,8 @@ Documented in `backend/.env.example`. Copy to `backend/.env` to override:
 | `DATABASE_URL` | `sqlite:///./hireiq.db` | SQLAlchemy database URL. Path is relative to `backend/`. |
 
 **Never commit `backend/.env`.** It is gitignored. Only `.env.example` is committed.
+
+> **Note:** `backend/uploads/` is also gitignored. It is created automatically by `make migrate`. Do not commit uploaded files.
 
 ---
 
@@ -282,9 +359,10 @@ Complete the author checklist in [`CODE_REVIEW.md`](./CODE_REVIEW.md) before req
 
 | Milestone | Description | Status |
 |-----------|-------------|--------|
-| **M1** | Foundation scaffold — FastAPI + SQLite + React monorepo | 🔨 In progress |
-| M2+ | Authentication, production infra, Alembic migrations, CI/CD | Planned |
+| **M1** | Foundation scaffold — FastAPI + SQLite + React monorepo | ✅ Complete |
+| **M2** | Resume upload — PDF/DOCX upload, local storage, metadata list | ✅ Complete |
+| M3+ | Authentication, AI parsing, production infra, Alembic migrations, CI/CD | Planned |
 
 ---
 
-*HireIQ — Milestone 1 · 2026*
+*HireIQ — Milestone 2 · 2026*
