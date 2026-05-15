@@ -4,6 +4,7 @@ __pycache__/
 *.pyo
 .env
 backend/hireiq.db
+backend/hireiq_test.db
 backend/.venv/
 backend/uploads/
 .venv/
