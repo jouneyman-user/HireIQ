@@ -5,6 +5,7 @@ __pycache__/
 .env
 backend/hireiq.db
 backend/.venv/
+backend/uploads/
 .venv/
 .pytest_cache/
 .ruff_cache/
