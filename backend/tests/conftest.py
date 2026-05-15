@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 # Import model first to register it with Base before create_all.
 # NOTE: must come before `from app.main import app` to avoid rebinding `app`
@@ -16,7 +17,9 @@ from app.main import app
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 test_engine = create_engine(
-    TEST_DATABASE_URL, connect_args={"check_same_thread": False}
+    TEST_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,  # Ensures all sessions share the same in-memory connection
 )
 TestingSessionLocal = sessionmaker(
     autocommit=False, autoflush=False, bind=test_engine
