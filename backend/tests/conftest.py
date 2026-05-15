@@ -6,11 +6,13 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+# Import model first to register it with Base before create_all.
+# NOTE: must come before `from app.main import app` to avoid rebinding `app`
+# to the package module instead of the FastAPI instance.
+import app.models.candidate  # noqa: F401
+
 from app.database import Base, get_db
 from app.main import app
-
-# Import model to register it with Base before create_all
-import app.models.candidate  # noqa: F401
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 test_engine = create_engine(
