@@ -7,6 +7,18 @@ import App from '../App'
 const server = setupServer(
   http.get('/api/resumes/', () => {
     return HttpResponse.json([])
+  }),
+  http.post('/api/generate/', () => {
+    return HttpResponse.json(
+      {
+        message: 'Generation queued (stub — AI integration pending)',
+        resume_id: 1,
+        job_title: 'Frontend Engineer',
+        seniority_level: 'Senior',
+        key_skills: ['TypeScript'],
+      },
+      { status: 202 }
+    )
   })
 )
 
@@ -56,5 +68,22 @@ describe('App', () => {
     await waitFor(() => {
       expect(screen.getByText('Alice')).toBeInTheDocument()
     })
+  })
+
+  it('renders the job role form heading', () => {
+    render(<App />)
+    expect(screen.getByRole('heading', { level: 2, name: /job role/i })).toBeInTheDocument()
+  })
+
+  it('shows upload hint when no resume is active', () => {
+    render(<App />)
+    expect(
+      screen.getByText(/upload a resume to enable question generation/i)
+    ).toBeInTheDocument()
+  })
+
+  it('generate questions button is disabled when no resume is uploaded', () => {
+    render(<App />)
+    expect(screen.getByRole('button', { name: /generate questions/i })).toBeDisabled()
   })
 })
