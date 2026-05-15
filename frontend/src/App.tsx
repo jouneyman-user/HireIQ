@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ResumeUpload } from './components/ResumeUpload'
 
 function App() {
   const [status, setStatus] = useState<string>('loading…')
@@ -14,6 +15,7 @@ function App() {
     <div>
       <h1>HireIQ</h1>
       <p>API status: <strong>{status}</strong></p>
+      <ResumeUpload />
     </div>
   )
 }

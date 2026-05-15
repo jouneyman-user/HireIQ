@@ -8,9 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "./node_modules/.bin/eslint .",
     "preview": "vite preview",
-    "test": "./node_modules/.bin/vitest run",
-    "test:watch": "./node_modules/.bin/vitest",
-    "test:coverage": "./node_modules/.bin/vitest run --coverage"
+    "test": "VITEST_SKIP_INSTALL_CHECKS=1 ./node_modules/.bin/vitest run",
+    "test:watch": "VITEST_SKIP_INSTALL_CHECKS=1 ./node_modules/.bin/vitest",
+    "test:coverage": "VITEST_SKIP_INSTALL_CHECKS=1 ./node_modules/.bin/vitest run --coverage"
   },
   "dependencies": {
     "react": "^19.2.6",
