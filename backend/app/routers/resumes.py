@@ -2,6 +2,7 @@ import os
 import uuid
 from datetime import datetime
 
+import pdfplumber
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
@@ -77,3 +78,43 @@ def get_resume(resume_id: int, db: Session = Depends(get_db)):
     if not resume:
         raise HTTPException(status_code=404, detail="Resume not found.")
     return resume
+
+
+@router.get("/{resume_id}/text")
+def get_resume_text(resume_id: int, db: Session = Depends(get_db)):
+    """Extract and return the raw text from a stored resume PDF.
+
+    Returns:
+        200 {"resume_text": "<extracted text>"}
+        404 if the resume DB record or the file on disk is not found.
+        422 if pdfplumber cannot extract any text (e.g. scanned image PDF).
+    """
+    resume = db.query(Resume).filter(Resume.id == resume_id).first()
+    if not resume:
+        raise HTTPException(status_code=404, detail="Resume not found.")
+
+    file_path = os.path.join(UPLOAD_DIR, resume.stored_filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Resume file not found on disk.")
+
+    try:
+        with pdfplumber.open(file_path) as pdf:
+            text = "\n".join(
+                page.extract_text() or "" for page in pdf.pages
+            ).strip()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Could not extract text from resume: {exc}",
+        ) from exc
+
+    if not text:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "No extractable text found in this resume. "
+                "Please upload a text-based PDF (not a scanned image)."
+            ),
+        )
+
+    return {"resume_text": text}
