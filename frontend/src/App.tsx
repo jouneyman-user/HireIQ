@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { ResumeList } from './components/ResumeList'
 import { ResumeUpload } from './components/ResumeUpload'
 import { JobRoleForm, JobRoleData } from './components/JobRoleForm'
+import { QuestionDisplay } from './components/QuestionDisplay'
+import { QuestionSkeleton } from './components/QuestionSkeleton'
 
 type Resume = {
   id: number
@@ -12,12 +14,16 @@ type Resume = {
   uploaded_at: string
 }
 
+type Question = {
+  text: string
+  follow_up: string
+  what_to_listen_for: string
+}
+
 type GenerateResult = {
-  message: string
-  resume_id: number
-  job_title: string
-  seniority_level: string
-  key_skills: string[]
+  technical: Question[]
+  behavioural: Question[]
+  culture_fit: Question[]
 }
 
 function App() {
@@ -44,12 +50,21 @@ function App() {
     setGenerating(true)
     setGenerateResult(null)
     setGenerateError(null)
+
     try {
+      // Step 1: fetch extracted resume text from the backend
+      const textRes = await fetch(`/api/resumes/${activeResumeId}/text`)
+      const textData = await textRes.json()
+      if (!textRes.ok) {
+        throw new Error(textData.detail ?? 'Could not read resume text.')
+      }
+
+      // Step 2: generate interview questions
       const res = await fetch('/api/generate/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          resume_id: activeResumeId,
+          resume_text: textData.resume_text,
           job_title: roleData.jobTitle,
           seniority_level: roleData.seniorityLevel,
           key_skills: roleData.keySkills,
@@ -77,7 +92,8 @@ function App() {
         </p>
       )}
       {generateError && <p style={{ color: 'red' }}>{generateError}</p>}
-      {generateResult && <p style={{ color: 'green' }}>{generateResult.message}</p>}
+      {generating && <QuestionSkeleton />}
+      {generateResult && !generating && <QuestionDisplay questions={generateResult} />}
       <h2>Uploaded Resumes</h2>
       <ResumeList resumes={resumes} />
     </div>
