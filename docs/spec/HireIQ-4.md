@@ -1,10 +1,11 @@
 # Issue Specification
 
 > **Issue:** [#4 — AI question generation — call Claude API and return categorised questions](https://github.com/jouneyman-user/HireIQ/issues/4)
-> **Date:** 2026-05-15
+> **Date:** 2026-06-22
 > **Effort:** L (Large)
 > **Milestone:** M2 — Core Agent
 > **Labels:** backend, AI
+> **Branch:** HireIQ-4-20260622203727
 
 ---
 
